@@ -52,14 +52,19 @@ CloudOps Status Page is a full-stack solution for real-time monitoring of web se
 
 ## Architecture
 
-```
 User ──> CloudFront ──> S3 (Static Site)
-		   │
-		   └──> API Gateway ──> Lambda (Python) ──> DynamoDB
-									  │
-									  └──> SNS/Slack (Alerts)
+     │
+     └──> API Gateway ──> Lambda (Python) ──> DynamoDB
+           │
+           └──> SNS/Slack (Alerts)
 EventBridge ──> Lambda (Monitoring Runner)
-```
+
+User ──> CloudFront ──> S3 (Static Site)
+     │
+     └──> API Gateway ──> Lambda (Python) ──> DynamoDB
+           │
+           └──> SNS/Slack (Alerts)
+EventBridge ──> Lambda (Monitoring Runner)
 
 ---
 
