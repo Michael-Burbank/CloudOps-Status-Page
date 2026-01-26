@@ -1,93 +1,135 @@
-# CloudOps-Status-Page
+# The CloudOps Status Page Challenge
 
+## AWS (Python + Terraform + Ansible)
 
+## Scope and SLOs (Service-Level Objectives)
 
-## Getting started
+Define 3–5 endpoints you will monitor (your portfolio site, an API endpoint, a public service). Choose check frequency (ex: every 5 minutes), what counts as “down” (timeout, non-2xx, latency threshold), and what the status page must show (current state, last check time, incident history). This is your acceptance criteria.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## HTML
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+Create a simple status page in HTML. It should include a header, a “system status” banner, and a table/list of monitored services. Start with placeholder values so you can build the UI before the backend exists.
 
-## Add your files
+## CSS
 
-* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+Style the page with CSS so it’s readable and looks intentional. Use clear status colors/labels (Up, Degraded, Down), spacing, and a layout that works on mobile. It does not need to be fancy. It needs to be professional.
 
-```
-cd existing_repo
-git remote add origin https://gitlab.com/mike.burbank/cloudops-status-page.git
-git branch -M main
-git push -uf origin main
-```
+## Static Website
 
-## Integrate with your tools
+Deploy the status page as an S3 static website. This is your front end hosting layer. The page should load quickly and reliably.
 
-* [Set up project integrations](https://gitlab.com/mike.burbank/cloudops-status-page/-/settings/integrations)
+## HTTPS
 
-## Collaborate with your team
+Put CloudFront in front of your S3 site so the status page loads over HTTPS. HTTPS is non-negotiable for anything public-facing.
 
-* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+## DNS
 
-## Test and Deploy
+Point a custom domain or subdomain to CloudFront (Route 53 is easiest, but any DNS provider works). Example: status.yourdomain.com. This makes it feel real and makes it resume-ready.
 
-Use the built-in continuous integration in GitLab.
+## JavaScript
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+Use a small amount of JavaScript to fetch live status data from your API and render it on the page. At minimum, the JS should call GET /status and update the DOM with per-service status and the “last updated” timestamp.
 
-***
+## Database
 
-# Editing this README
+Store check results and incident records in DynamoDB. You need at least two access patterns: “latest status per service” and “recent history for a service.” Design your partition/sort keys to support those reads efficiently.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## API
 
-## Suggestions for a good README
+Do not read DynamoDB directly from the browser. Create an API layer that the front end calls. Use API Gateway endpoints like:
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## GET /status (current status summary)
 
-## Name
-Choose a self-explaining name for your project.
+## GET /history?service=name (recent checks or incidents)
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## Python
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+Implement the API handlers in Python (Lambda). Use boto3 to query DynamoDB, normalize the response format, and return clean JSON. This is where you show backend fundamentals: validation, error handling, and structured logging.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+## Monitoring Runner
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+Create the actual “monitoring engine.” Use an EventBridge schedule to run checks every N minutes. The runner (Lambda in Python) should:
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+request each endpoint with a timeout
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+measure latency and record status code
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+write results to DynamoDB
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+detect state changes (Up→Down, Down→Up)
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+## Incident Tracking
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+Add incident lifecycle logic. When a service first fails, open an incident record (start time, severity, details). When it recovers, close the incident (end time, duration). The status page should show open incidents and recent incident history, not just raw checks.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+## Alerts
 
-## License
-For open source projects, say how it is licensed.
+When an incident opens (or when failures cross a threshold), notify someone. Start with SNS email. Include service name, timestamp, failure reason, and a link to the status page. Optional upgrade: Slack via webhook Lambda.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## Tests
+
+Write tests for your Python code. At minimum:
+
+unit tests for the health-check logic (timeouts, non-200, latency thresholds)
+
+unit tests for state-change and incident logic
+
+unit tests for API response shapes
+
+ Optional: a deployment smoke test that hits the live API endpoint.
+
+## Infrastructure as Code (Terraform)
+
+Do not build this by clicking in the console. Use Terraform to provision:
+
+S3 bucket + CloudFront + ACM + Route 53
+
+API Gateway + Lambda + IAM roles/policies
+
+DynamoDB tables
+
+EventBridge schedules + permissions
+
+This is your Terraform “first project,” so keep it clean: inputs, outputs, and a simple module structure.
+
+Configuration Management (Ansible)
+
+Use Ansible for something real. Two good choices:
+
+Provision an “ops toolbox” EC2 instance and configure it (packages, users, shell tools, diagnostic scripts), or
+
+Standardize your dev environment (install tooling, configure git hooks, consistent commands)
+
+Document what Ansible is responsible for vs Terraform.
+
+## Source Control
+
+Use GitHub repos for everything (recommended: one mono-repo with /frontend, /backend, /infra, or separate repos if you want to mirror the original challenge). Enforce branch protections and PR checks so it looks like professional engineering work.
+
+## CI/CD (Back end + Infra)
+
+Set up GitHub Actions so that on push/PR:
+
+run lint + pytest
+
+run terraform fmt + terraform validate
+
+On merge to main:
+
+deploy Terraform (plan/apply via protected environment)
+
+package and deploy Lambda code
+
+Never commit AWS credentials. Use GitHub OIDC to assume an AWS role.
+
+## CI/CD (Front end)
+
+Set up GitHub Actions so that changes to the front end automatically deploy to S3 and invalidate CloudFront. This gives you a clean, repeatable release process.
+
+## Observability and Hardening
+
+Add CloudWatch dashboards/logging, sensible alarms (runner failures, API errors), and tight IAM. Add basic rate limiting / WAF if you want extra points. Make sure secrets are not in code. Ensure CORS is correct for your domain.
+
+## Blog Post
+
+Write a short blog post describing what you built and what you learned. Include real lessons: Terraform mental model, IAM mistakes you fixed, how you designed DynamoDB keys, and how you implemented incident state transitions. Link it from the status page.
