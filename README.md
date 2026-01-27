@@ -3,6 +3,7 @@
 
 A professional, cloud-native status page solution for monitoring and displaying the health of multiple endpoints, built with AWS (Python, Terraform, Ansible), and featuring robust CI/CD with GitLab CI and GitHub Actions.
 
+
 ---
 
 # Table of Contents
