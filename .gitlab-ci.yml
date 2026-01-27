@@ -17,6 +17,7 @@ github:
   stage: ci
   script:
     - echo "Pushing to GitHub repository..."
+    - git remote add github "https://github.com/Michael-Burbank/CloudOps-Status-Page.git"
     - git remote set-url github "https://${GITHUB_TOKEN}@github.com/Michael-Burbank/CloudOps-Status-Page.git"
     - git push github main
     - echo "Pushed to GitHub repository."
