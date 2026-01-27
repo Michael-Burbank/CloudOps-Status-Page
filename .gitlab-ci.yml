@@ -17,9 +17,12 @@ github:
   stage: ci
   script:
     - echo "Pushing to GitHub repository..."
-    - git remote add github "https://github.com/Michael-Burbank/CloudOps-Status-Page.git"
-    - git remote set-url github "https://${GITHUB_TOKEN}@github.com/Michael-Burbank/CloudOps-Status-Page.git"
-    - git --set-upstream github main
+    - |
+      if git remote | grep github; then
+        git remote set-url github "https://${GITHUB_TOKEN}@github.com/Michael-Burbank/CloudOps-Status-Page.git"
+      else
+        git remote add github "https://${GITHUB_TOKEN}@github.com/Michael-Burbank/CloudOps-Status-Page.git"
+      fi
     - git push github main
     - echo "Pushed to GitHub repository."
   rules:
