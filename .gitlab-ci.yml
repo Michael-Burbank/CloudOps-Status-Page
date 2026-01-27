@@ -23,9 +23,9 @@ github:
       else
         git remote add github "https://${GITHUB_TOKEN}@github.com/Michael-Burbank/CloudOps-Status-Page.git"
       fi
+    - git checkout -b main || git checkout main
     - git push github main
     - echo "Pushed to GitHub repository."
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: always
-
