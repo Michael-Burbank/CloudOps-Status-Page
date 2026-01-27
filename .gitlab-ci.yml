@@ -19,10 +19,10 @@ github:
     - echo "Pushing to GitHub repository..."
     - git remote add github "https://github.com/Michael-Burbank/CloudOps-Status-Page.git"
     - git remote set-url github "https://${GITHUB_TOKEN}@github.com/Michael-Burbank/CloudOps-Status-Page.git"
+    - git --set-upstream github main
     - git push github main
     - echo "Pushed to GitHub repository."
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: always
 
-      
