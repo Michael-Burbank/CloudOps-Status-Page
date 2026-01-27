@@ -1,14 +1,25 @@
-
-stages:
-- secret-detection
-- ci
-- test
-sast:
-  stage: test
 include:
-- template: Security/SAST.gitlab-ci.yml
-- template: Security/Secret-Detection.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
 variables:
   SECRET_DETECTION_ENABLED: 'true'
-secret_detection:
-  stage: secret-detection
+  GIT_DEPTH: 0
+
+stages:
+  - secret-detection
+  - ci
+  - test
+  - build
+  - deploy
+
+github:
+  stage: ci
+  script:
+    - echo "Pushing to GitHub repository..."
+    - git remote set-url github "https://${GITHUB_TOKEN}@github.com/Michael-Burbank/CloudOps-Status-Page.git"
+    - git push github main
+    - echo "Pushed to GitHub repository."
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
