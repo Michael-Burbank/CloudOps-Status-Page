@@ -59,9 +59,11 @@ body {
 }
 
 .services-container {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 2rem;
+	display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 3fr));
+    
+	/* flex-wrap: wrap; */
+	gap: 4rem;
 	justify-content: center;
 	margin-bottom: 2.5rem;
 }
