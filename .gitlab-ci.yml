@@ -18,6 +18,9 @@ github:
   script:
     - echo "Pushing to GitHub repository..."
     - |
+      git config user.name "Michael-Burbank"
+      git config user.email "Mike.W.Burbank@Gmail.com"
+    - |
       if git remote | grep github; then
         git remote set-url github "https://${GITHUB_TOKEN}@github.com/Michael-Burbank/CloudOps-Status-Page.git"
       else
