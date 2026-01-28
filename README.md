@@ -1,9 +1,7 @@
 ---
- CloudOps Status Page
+CloudOps Status Page
 
-A professional, cloud-native status page solution for monitoring and displaying the health of multiple endpoints, built with AWS (Python, Terraform, Ansible), and featuring robust CI/CD with GitLab CI and GitHub Actions.
-
-
+A professional, cloud-native status page solution for monitoring and displaying the health of multiple endpoints, built with AWS (Python, Terraform, Ansible), and featuring robust CI/CD with GitLab CI.
 ---
 
 # Table of Contents
@@ -17,7 +15,6 @@ A professional, cloud-native status page solution for monitoring and displaying 
   - [Configuration Management](#configuration-management)
   - [CI/CD](#cicd)
     - [GitLab CI](#gitlab-ci)
-    - [GitHub Actions](#github-actions)
   - [Contributing](#contributing)
   - [License](#license)
 
@@ -46,25 +43,25 @@ CloudOps Status Page is a full-stack solution for real-time monitoring of web se
 - Automated tests for backend logic and API
 - Infrastructure as Code with Terraform
 - Configuration management with Ansible
-- Source control and mirroring (GitLab + GitHub)
-- CI/CD with GitLab CI and GitHub Actions
+- Source control and mirroring (GitLab => GitHub)
+- CI/CD with GitLab CI
 
 ---
 
 ## Architecture
 
 User ──> CloudFront ──> S3 (Static Site)
-     │
-     └──> API Gateway ──> Lambda (Python) ──> DynamoDB
-           │
-           └──> SNS/Slack (Alerts)
+│
+└──> API Gateway ──> Lambda (Python) ──> DynamoDB
+│
+└──> SNS/Slack (Alerts)
 EventBridge ──> Lambda (Monitoring Runner)
 
 User ──> CloudFront ──> S3 (Static Site)
-     │
-     └──> API Gateway ──> Lambda (Python) ──> DynamoDB
-           │
-           └──> SNS/Slack (Alerts)
+│
+└──> API Gateway ──> Lambda (Python) ──> DynamoDB
+│
+└──> SNS/Slack (Alerts)
 EventBridge ──> Lambda (Monitoring Runner)
 
 ---
@@ -110,9 +107,6 @@ Ansible is used for:
 - Lint, test, and validate on push/PR
 - Deploy infrastructure and backend on merge to main
 - Pipeline step to push changes to GitHub (mirror)
-
-### GitHub Actions
-
 - Lint + pytest for Python code
 - `terraform fmt` + `terraform validate` for IaC
 - Deploy Lambda/API and infrastructure on main
