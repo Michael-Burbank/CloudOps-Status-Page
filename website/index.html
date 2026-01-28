@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Services - Status Page</title>
     <link rel="stylesheet" href="/website/assets/css/style.css">
 </head>
+
 <body>
     <header class="status-header">
         <h1>CloudOps Status Page</h1>
@@ -20,10 +22,10 @@
                     <span class="service-name">Michael-Burbank.com</span>
                     <span class="service-status up">UP</span>
                 </header>
-                <div class="service-metrics">
-                    <span>Uptime: <strong>--%</strong></span>
+                <aside class="service-metrics">
+                    <span>Uptime: <strong><span id="uptime-michael-burbank">--%</span></strong></span>
                     <span>Downtime: <strong>--m</strong></span>
-                </div>
+                </aside>
             </article>
             <!-- resume.Michael-Burbank.com -->
             <article class="service-card resume-michael-burbank">
@@ -31,10 +33,10 @@
                     <span class="service-name">resume.Michael-Burbank.com</span>
                     <span class="service-status up">UP</span>
                 </header>
-                <div class="service-metrics">
-                    <span>Uptime: <strong>--%</strong></span>
+                <aside class="service-metrics">
+                    <span>Uptime: <strong><span id="uptime-resume-michael-burbank">--%</span></strong></span>
                     <span>Downtime: <strong>--m</strong></span>
-                </div>
+                </aside>
             </article>
             <!-- TattoosByEder.com -->
             <article class="service-card tattoos-by-eder">
@@ -42,10 +44,10 @@
                     <span class="service-name">TattoosByEder.com</span>
                     <span class="service-status up">UP</span>
                 </header>
-                <div class="service-metrics">
-                    <span>Uptime: <strong>--%</strong></span>
+                <aside class="service-metrics">
+                    <span>Uptime: <strong><span id="uptime-tattoos-by-eder">--%</span></strong></span>
                     <span>Downtime: <strong>--m</strong></span>
-                </div>
+                </aside>
             </article>
         </section>
         <aside class="incident-history" aria-label="Incident History">
@@ -61,4 +63,5 @@
     </footer> -->
     <script src="/website/assets/js/main.js" defer></script>
 </body>
+
 </html>
