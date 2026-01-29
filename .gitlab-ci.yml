@@ -46,7 +46,7 @@ deploy_to_dev_environment:
     - export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
     - export AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
     - echo "Syncing files to AWS S3 bucket..."
-    - aws s3 sync /Users/mike/Desktop/Dev/Web/cloudops-status-page/services/michael-burbank/ s3://$S3_BUCKET_NAME --exclude "*" --include "services/michael-burbank/frontend/**"
+    - aws s3 sync /services/michael-burbank/frontend/ s3://$S3_BUCKET_NAME --exclude "*"
     - |
       echo "Website URL: http://${S3_BUCKET_NAME}.s3-website-${AWS_DEFAULT_REGION}.amazonaws.com"
       echo "Invalidating CloudFront Distribution..."
@@ -54,6 +54,6 @@ deploy_to_dev_environment:
     - echo "Deployed to development environment."
   environment:
     name: development
-    url: https://dev.example.com
+    url: http://$S3_BUCKET_NAME.s3-website-$AWS_DEFAULT_REGION.amazonaws.com
   only:
     - main
