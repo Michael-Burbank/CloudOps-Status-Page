@@ -1,4 +1,5 @@
-/*
+/* AWS S3 Bucket for CloudOps Status Page
+
 Terraform configuration for the CloudOps Status Page infrastructure.
 I provision a single S3 bucket for a private dev website/environment, with a
 minimal public surface.
@@ -79,10 +80,10 @@ resource "aws_s3_bucket_ownership_controls" "ownership" {
 resource "aws_s3_bucket_public_access_block" "block" {
   bucket = aws_s3_bucket.cloudops_status_page_bucket.id
 
-  block_public_acls       = true  # I still ignore ACLs
-  block_public_policy     = false # I allow a bucket policy to explicitly permit access (scoped by IP)
+  block_public_acls       = true
+  block_public_policy     = true
   ignore_public_acls      = true
-  restrict_public_buckets = false
+  restrict_public_buckets = true
 }
 
 # Server-side encryption ----------------------------------------------------
