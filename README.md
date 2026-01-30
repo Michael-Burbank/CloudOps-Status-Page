@@ -1,8 +1,8 @@
----
+## CloudOps Status Page
+
 CloudOps Status Page
 
-A professional, cloud-native status page solution for monitoring and displaying the health of multiple endpoints, built with AWS (Python, Terraform, Ansible), and featuring robust CI/CD with GitLab CI.
----
+## A professional, cloud-native status page solution for monitoring and displaying the health of multiple endpoints, built with AWS (Python, Terraform, Ansible), and featuring robust CI/CD with GitLab CI. The status page and the backend run on an Amazon Linux 2023 EC2 host behind an ALB, and I use CloudFront in front for HTTPS, caching, and a clean public edge.
 
 # Table of Contents
 
@@ -15,6 +15,7 @@ A professional, cloud-native status page solution for monitoring and displaying 
   - [Configuration Management](#configuration-management)
   - [CI/CD](#cicd)
     - [GitLab CI](#gitlab-ci)
+  - [Roadmap](#roadmap)
   - [Contributing](#contributing)
   - [License](#license)
 
@@ -33,36 +34,40 @@ CloudOps Status Page is a full-stack solution for real-time monitoring of web se
 - Detects downtime (timeouts, non-2xx, latency thresholds)
 - Professional HTML/CSS status page with live updates
 - Responsive design for mobile and desktop
-- S3 static website hosting with CloudFront (HTTPS)
-- Custom domain support via Route 53
-- Live status and incident history via JavaScript/API
-- DynamoDB for storing check results and incidents
-- API Gateway + Lambda (Python) backend
-- EventBridge-scheduled monitoring runner (Python Lambda)
-- Incident lifecycle management and alerting (SNS/Slack)
-- Automated tests for backend logic and API
-- Infrastructure as Code with Terraform
-- Configuration management with Ansible
-- Source control and mirroring (GitLab => GitHub)
-- CI/CD with GitLab CI
+  S3 static website hosting with CloudFront (HTTPS)
+  CloudFront in front of ALB and S3 for edge HTTPS and caching
+  Custom domain support via Route 53
+  Live status and incident history via JavaScript/API
+  DynamoDB for storing check results and incidents
+  Backend API and monitoring runner on EC2 (Amazon Linux 2023)
+  ALB for routing API traffic to EC2
+  Incident lifecycle management and alerting (SNS/Slack)
+  Automated tests for backend logic and API
+  Infrastructure as Code with Terraform
+  Configuration management with Ansible
+  Source control and mirroring (GitLab => GitHub)
+  CI/CD with GitLab CI
 
 ---
 
 ## Architecture
 
-User ──> CloudFront ──> S3 (Static Site)
+User ──> Route 53 ──> CloudFront ──> S3 (Static Site)
 │
-└──> API Gateway ──> Lambda (Python) ──> DynamoDB
+└──> CloudFront ──> ALB ──> EC2 (API & Monitoring Runner)
+│
+└──> DynamoDB (Status, History, Incidents)
 │
 └──> SNS/Slack (Alerts)
-EventBridge ──> Lambda (Monitoring Runner)
 
-User ──> CloudFront ──> S3 (Static Site)
-│
-└──> API Gateway ──> Lambda (Python) ──> DynamoDB
-│
-└──> SNS/Slack (Alerts)
-EventBridge ──> Lambda (Monitoring Runner)
+**CloudFront**: CDN in front of both S3 (static site) and ALB (API)
+**S3**: Hosts static HTML/CSS/JS files
+**ALB**: Routes /api/\* traffic to EC2
+**EC2**: Runs Python API (FastAPI/Flask) and monitoring runner (systemd timer)
+**DynamoDB**: Stores status, check history, and incident records
+**SNS**: Sends email alerts (Slack optional)
+**Route 53**: Custom domain for status page
+**ACM**: TLS certificates for HTTPS
 
 ---
 
@@ -70,8 +75,8 @@ EventBridge ──> Lambda (Monitoring Runner)
 
 1. **Clone the repository**
 2. **Configure endpoints and SLOs** in the configuration files
-3. **Deploy infrastructure** using Terraform
-4. **Configure Ansible** for dev environment or ops toolbox
+3. Use Terraform to provision the AWS infrastructure (S3, CloudFront, ALB, EC2, Route 53, DynamoDB, SNS)
+4. **Configure Ansible** for EC2 instance setup and ops toolbox
 5. **Set up CI/CD** for automated testing and deployment
 
 ---
@@ -80,10 +85,16 @@ EventBridge ──> Lambda (Monitoring Runner)
 
 All AWS resources are provisioned using Terraform:
 
-- S3 bucket, CloudFront, ACM, Route 53
-- API Gateway, Lambda, IAM roles/policies
+- S3 bucket for static site assets
+- CloudFront distribution with two origins (S3 and ALB)
+- ACM certificate and Route 53 records
+- VPC, security groups
+- ALB + target group + listener
+- EC2 instance (Amazon Linux 2023, t2.small, gp3 30GB EBS)
+- IAM instance profile (least privilege for DynamoDB and SNS)
 - DynamoDB tables
-- EventBridge schedules
+- SNS topic/subscription
+- Optional CloudWatch logs and alarms
 
 > **Tip:** Use modules, inputs, and outputs for clean, reusable code.
 
@@ -93,7 +104,10 @@ All AWS resources are provisioned using Terraform:
 
 Ansible is used for:
 
-- Provisioning an "ops toolbox" EC2 instance (packages, users, scripts)
+- Provisioning and configuring the EC2 instance (users, packages, Python environment)
+- Setting up systemd services for API and monitoring runner
+- Nginx config (if used)
+- Basic hardening and logging
 - Standardizing dev environments (tooling, git hooks, commands)
 
 > **Note:** Document what Ansible manages vs. Terraform.
@@ -109,10 +123,29 @@ Ansible is used for:
 - Pipeline step to push changes to GitHub (mirror)
 - Lint + pytest for Python code
 - `terraform fmt` + `terraform validate` for IaC
-- Deploy Lambda/API and infrastructure on main
+- Deploy backend code to EC2 and restart systemd services
 - Frontend deploys to S3 and invalidates CloudFront
 
 > **Security:** Never commit AWS credentials. Use OIDC for GitHub Actions to assume AWS roles.
+
+---
+
+## Roadmap
+
+1. Baseline health checks and UI wiring  
+   Lock endpoint list, timeouts, latency thresholds, and consecutive-check rules. Wire the status page JavaScript to the API (served from EC2) so the UI updates from live data.
+
+2. EC2 host setup with Ansible  
+   Configure the Amazon Linux 2023 EC2 instance with Ansible: users, packages, Nginx (if used), and systemd units for the API and monitoring runner.
+
+3. Monitoring runner and DynamoDB persistence  
+   Build the runner as a Python script scheduled with a systemd timer on EC2. Write results to DynamoDB and maintain a clean history view for each service.
+
+4. Incident tracking and notifications  
+   Add incident open/close logic based on consecutive failures/recoveries. Send SNS email alerts (and optionally Slack) when incidents open.
+
+5. CloudFront, DNS, and production hardening  
+   Place CloudFront in front of both S3 (static site) and ALB (API). Point DNS through Route 53. Harden security: least-privilege IAM, minimal inbound ports, log visibility, and basic alarms.
 
 ---
 
