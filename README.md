@@ -1,12 +1,11 @@
-## CloudOps Status Page
+# CloudOps Status Page
 
-CloudOps Status Page
+A professional, cloud-native status page solution for monitoring and displaying the health of multiple endpoints, built with AWS (Python, Terraform, Ansible), and featuring robust CI/CD with GitLab CI. The status page and the backend run on an Amazon Linux 2023 EC2 host behind an ALB, and CloudFront in front for HTTPS, caching, and a clean public edge.
 
-## A professional, cloud-native status page solution for monitoring and displaying the health of multiple endpoints, built with AWS (Python, Terraform, Ansible), and featuring robust CI/CD with GitLab CI. The status page and the backend run on an Amazon Linux 2023 EC2 host behind an ALB, and I use CloudFront in front for HTTPS, caching, and a clean public edge.
+## Table of Contents
 
-# Table of Contents
-
-- [Table of Contents](#table-of-contents)
+- [CloudOps Status Page](#cloudops-status-page)
+  - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Features](#features)
   - [Architecture](#architecture)
@@ -34,19 +33,19 @@ CloudOps Status Page is a full-stack solution for real-time monitoring of web se
 - Detects downtime (timeouts, non-2xx, latency thresholds)
 - Professional HTML/CSS status page with live updates
 - Responsive design for mobile and desktop
-  S3 static website hosting with CloudFront (HTTPS)
-  CloudFront in front of ALB and S3 for edge HTTPS and caching
-  Custom domain support via Route 53
-  Live status and incident history via JavaScript/API
-  DynamoDB for storing check results and incidents
-  Backend API and monitoring runner on EC2 (Amazon Linux 2023)
-  ALB for routing API traffic to EC2
-  Incident lifecycle management and alerting (SNS/Slack)
-  Automated tests for backend logic and API
-  Infrastructure as Code with Terraform
-  Configuration management with Ansible
-  Source control and mirroring (GitLab => GitHub)
-  CI/CD with GitLab CI
+- S3 static website hosting with CloudFront (HTTPS)
+- CloudFront in front of ALB and S3 for edge HTTPS and caching
+- Custom domain support via Route 53
+- Live status and incident history via JavaScript/API
+- DynamoDB for storing check results and incidents
+- Backend API and monitoring runner on EC2 (Amazon Linux 2023)
+- ALB for routing API traffic to EC2
+- Incident lifecycle management and alerting (SNS/Slack)
+- Automated tests for backend logic and API
+- Infrastructure as Code with Terraform
+- Configuration management with Ansible
+- Source control and mirroring (GitLab => GitHub)
+- CI/CD with GitLab CI
 
 ---
 
@@ -61,12 +60,19 @@ User ──> Route 53 ──> CloudFront ──> S3 (Static Site)
 └──> SNS/Slack (Alerts)
 
 **CloudFront**: CDN in front of both S3 (static site) and ALB (API)
+
 **S3**: Hosts static HTML/CSS/JS files
-**ALB**: Routes /api/\* traffic to EC2
+
+**ALB**: Routes `/api/*` traffic to EC2
+
 **EC2**: Runs Python API (FastAPI/Flask) and monitoring runner (systemd timer)
+
 **DynamoDB**: Stores status, check history, and incident records
+
 **SNS**: Sends email alerts (Slack optional)
+
 **Route 53**: Custom domain for status page
+
 **ACM**: TLS certificates for HTTPS
 
 ---
