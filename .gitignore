@@ -12,3 +12,4 @@ infra/terraform/terraform.tfstate.backup
 node_modules/
 
 .env
+infra/terraform/terraform.tfvars
