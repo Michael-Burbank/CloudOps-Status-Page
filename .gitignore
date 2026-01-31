@@ -13,3 +13,7 @@ node_modules/
 
 .env
 infra/terraform/terraform.tfvars
+infra/ansible/ansible-README.md
+AWS-Ansible.code-workspace.json
+infra/ansible/inventory/inventory.ini
+.ansible/.lock
