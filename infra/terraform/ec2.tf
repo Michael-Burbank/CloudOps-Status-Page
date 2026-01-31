@@ -7,9 +7,10 @@ data "aws_ssm_parameter" "al2023_612" {
 
 # Define the AWS EC2 instance.
 resource "aws_instance" "web_server" {
-  ami           = data.aws_ssm_parameter.al2023_612.value
-  instance_type = "t3.small"
-  monitoring    = true
+  ami                  = data.aws_ssm_parameter.al2023_612.value
+  instance_type        = "t3.small"
+  monitoring           = true
+  iam_instance_profile = aws_iam_instance_profile.ec2_s3_profile.name
 
   # Configure the root block device with gp3 volume type, 10GB size, 3000 IOPS, and 125 MB/s throughput.
   root_block_device {
@@ -19,14 +20,20 @@ resource "aws_instance" "web_server" {
     throughput  = 125
   }
 
-  # Add networking, key_name, and security groups as needed
+  # Add networking, key_name, and security groups as needed.
   subnet_id              = aws_subnet.main.id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
   key_name               = var.aws_ec2_key_name
   tags = {
-    Name        = "web-server"
+    Name        = "CloudOps-Status-Page"
     Environment = var.environment
   }
+}
+
+# Create an IAM instance profile to attach the role to the EC2 instance.
+resource "aws_iam_instance_profile" "ec2_s3_profile" {
+  name = "ec2-s3-profile"
+  role = aws_iam_role.ec2_s3_access.name
 }
 
 # Create the virtual private cloud (VPC).
@@ -118,4 +125,37 @@ resource "aws_route_table" "public_rt" {
 resource "aws_route_table_association" "public_rt_assoc" {
   subnet_id      = aws_subnet.main.id
   route_table_id = aws_route_table.public_rt.id
+}
+
+# Create an IAM role for the EC2 instance. 
+# This role is needed to ensure the EC2 instance can interact with the S3 bucket.
+resource "aws_iam_role" "ec2_s3_access" {
+  name               = "ec2-s3-access-role"
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role_policy.json
+}
+
+data "aws_iam_policy_document" "ec2_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "ec2_s3_policy" {
+  name   = "ec2-s3-access"
+  role   = aws_iam_role.ec2_s3_access.id
+  policy = data.aws_iam_policy_document.ec2_s3_policy.json
+}
+
+data "aws_iam_policy_document" "ec2_s3_policy" {
+  statement {
+    actions = ["s3:GetObject", "s3:ListBucket", "s3:PutObject"]
+    resources = [
+      aws_s3_bucket.cloudops_status_page_bucket.arn,
+      "${aws_s3_bucket.cloudops_status_page_bucket.arn}/*"
+    ]
+  }
 }
