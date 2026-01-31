@@ -61,3 +61,25 @@ resource "aws_eip_association" "web_eip_assoc" {
 output "instance_public_ip" {
   value = aws_eip.web_eip.public_ip
 }
+
+# Configure the Internet Gateway.
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+}
+
+# Create a route table and a default route to the Internet Gateway.
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.main.id
+
+  # Configures a default route to the Internet Gateway with open access.
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+}
+
+# Associate the route table with the subnet.
+resource "aws_route_table_association" "public_rt_assoc" {
+  subnet_id      = aws_subnet.main.id
+  route_table_id = aws_route_table.public_rt.id
+}
