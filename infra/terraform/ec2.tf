@@ -1,9 +1,4 @@
-# Define the provider.
 
-provider "aws" {
-  region  = var.aws_region
-  profile = var.aws_profile
-}
 
 # Retrieve the latest Amazon Linux 2023 AMI with kernel 6.12.
 data "aws_ssm_parameter" "al2023_612" {
@@ -26,8 +21,12 @@ resource "aws_instance" "web_server" {
 
   # Add networking, key_name, and security groups as needed
   subnet_id              = aws_subnet.main.id
-  vpc_security_group_ids = [var.security_group_id]
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
   key_name               = var.aws_ec2_key_name
+  tags = {
+    Name        = "web-server"
+    Environment = var.environment
+  }
 }
 
 # Create the virtual private cloud (VPC).
@@ -35,6 +34,35 @@ resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
   tags = {
     Name = "main-vpc"
+  }
+}
+
+# Create the security group for the EC2 instance.
+resource "aws_security_group" "web_sg" {
+  name        = "web-sg"
+  description = "Allow HTTP and SSH traffic"
+  vpc_id      = aws_vpc.main.id
+  tags = {
+    Name        = "web-sg"
+    Environment = var.environment
+  }
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.owner_ip_cidr]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
@@ -60,6 +88,14 @@ resource "aws_eip_association" "web_eip_assoc" {
 
 output "instance_public_ip" {
   value = aws_eip.web_eip.public_ip
+}
+
+output "instance_id" {
+  value = aws_instance.web_server.id
+}
+
+output "instance_public_dns" {
+  value = aws_instance.web_server.public_dns
 }
 
 # Configure the Internet Gateway.

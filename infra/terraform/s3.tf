@@ -8,11 +8,6 @@
 # All other AWS principals in my account retain full access. I use SSE-S3 for server-side encryption so anonymous reads (from my whitelisted IP) can succeed if needed.
 
 # Input variables ------------------------------------------------------------
-variable "aws_region" {
-  description = "AWS region for this deployment"
-  type        = string
-  default     = "us-west-1"
-}
 
 variable "environment" {
   description = "Deployment environment identifier used to namespace resources (dev, staging, prod)."
@@ -23,20 +18,6 @@ variable "environment" {
 variable "owner_ip_cidr" {
   description = "Public IPv4 address in CIDR format that is allowed anonymous GET access to the S3 website. Required for my dev workflow."
   type        = string
-}
-
-# Provider configuration -----------------------------------------------------
-# I apply default tags to supported resources in this configuration.
-provider "aws" {
-  region = var.aws_region
-
-  default_tags {
-    tags = {
-      Project     = "cloudops-status-page"
-      Environment = var.environment
-      Owner       = "mike"
-    }
-  }
 }
 
 # Data sources ---------------------------------------------------------------
