@@ -1,13 +1,11 @@
-/* AWS S3 Bucket for CloudOps Status Page
 
-Terraform configuration for the CloudOps Status Page infrastructure.
-I provision a single S3 bucket for a private dev website/environment, with a
-minimal public surface.
-
-Only GETs from my whitelisted IP are allowed.
-All other AWS principals in the account retain full access. Server-side
-encryption uses SSE-S3 so anonymous reads (from my whitelisted IP) can succeed.
-*/
+# AWS S3 Bucket for CloudOps Status Page (Frontend Only)
+#
+# I use this Terraform configuration to provision a single S3 bucket dedicated to hosting only the static frontend assets (HTML, CSS, JS, images) for my status page. All backend/API/monitoring is handled by EC2.
+#
+# In development, I allow GETs from my whitelisted IP for direct S3 website access. In production, I plan to use CloudFront as the only public access, keeping the bucket private and allowing CloudFront (via OAI/OAC) to fetch objects.
+#
+# All other AWS principals in my account retain full access. I use SSE-S3 for server-side encryption so anonymous reads (from my whitelisted IP) can succeed if needed.
 
 # Input variables ------------------------------------------------------------
 variable "aws_region" {
@@ -52,7 +50,7 @@ resource "random_id" "bucket_suffix" {
 }
 
 # S3 Bucket ------------------------------------------------------------------
-# I create the primary S3 bucket to host the static status page files. The name includes environment + short random suffix.
+# I create the S3 bucket to host only the static frontend files for my status page. The name includes the environment and a short random suffix for uniqueness.
 resource "aws_s3_bucket" "cloudops_status_page_bucket" {
   bucket = "cloudops-status-page-${var.environment}-${random_id.bucket_suffix.hex}"
 
@@ -99,9 +97,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "cloudops_status_p
   }
 }
 
-# Bucket policy: account principals + IP whitelist ---------------------------
-# - I grant full S3 permissions to the AWS account root (and therefore account principals).
-# - I allow anonymous s3:GetObject only when the request originates from owner_ip_cidr.
+# Bucket policy: account principals + IP whitelist (dev) ---------------------
+# - I grant full S3 permissions to my AWS account root (so I always have access).
+# - In development, I allow anonymous s3:GetObject only from my whitelisted IP for direct S3 website testing.
+# - In production, I will update this policy to allow only CloudFront (OAI/OAC) to access the bucket.
 data "aws_iam_policy_document" "s3_owner_and_ip_policy" {
   statement {
     sid    = "AllowAccountFullAccess"
@@ -153,7 +152,7 @@ resource "aws_s3_bucket_policy" "owner_ip_policy" {
 }
 
 # Static website hosting configuration --------------------------------------
-# I configure the bucket to serve index.html via the S3 website endpoint.
+# I configure the bucket to serve index.html via the S3 website endpoint for development and testing. In production, I will use CloudFront as the public entry point for the static site.
 resource "aws_s3_bucket_website_configuration" "cloudops_status_page_bucket_website" {
   bucket = aws_s3_bucket.cloudops_status_page_bucket.id
 
@@ -161,16 +160,16 @@ resource "aws_s3_bucket_website_configuration" "cloudops_status_page_bucket_webs
     suffix = "index.html"
   }
 
-  # Optional: I can add an error_document block if I have a custom error page:
+  # If I have a custom error page, I can uncomment the following block:
   # error_document {
   #   key = "error.html"
   # }
 }
 
 # Outputs --------------------------------------------------------------------
-# I output the plaintext bucket name for use in scripts / local testing.
+# I output the plaintext bucket name so I can use it in scripts or local testing to upload static frontend files.
 output "s3_bucket_name" {
-  description = "S3 bucket name for the status page (use this to upload files)."
+  description = "S3 bucket name for the status page (use this to upload static frontend files)."
   value       = aws_s3_bucket.cloudops_status_page_bucket.bucket
 }
 
