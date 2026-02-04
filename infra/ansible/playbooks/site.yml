@@ -1,0 +1,82 @@
+- name: Configure web server (EC2) with Nginx
+  hosts: web
+  become: true
+  vars:
+    domain_name: status.michael-burbank.com
+    web_root: /var/www/myapp
+
+  tasks:
+    - name: Install Nginx on Amazon Linux 2
+      ansible.builtin.command: amazon-linux-extras install nginx1 -y
+      args:
+        creates: /etc/nginx/nginx.conf
+      when:
+        - ansible_distribution == "Amazon"
+        - ansible_distribution_major_version is version('2', '==')
+
+    - name: Install Nginx on Amazon Linux 2023
+      ansible.builtin.dnf:
+        name: nginx
+        state: present
+      when:
+        - ansible_distribution == "Amazon"
+        - ansible_distribution_major_version is version('2023', '==')
+
+    - name: Ensure /etc/nginx/conf.d exists
+      ansible.builtin.file:
+        path: /etc/nginx/conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Ensure web root exists
+      ansible.builtin.file:
+        path: "{{ web_root }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Configure Nginx server block for domain (HTTP)
+      ansible.builtin.copy:
+        dest: /etc/nginx/conf.d/myapp.conf
+        content: |
+          server {
+              listen 80;
+              server_name {{ domain_name }} www.{{ domain_name }};
+              root {{ web_root }};
+              index index.html;
+
+              # Optional: ensure ACME HTTP-01 challenge isservable
+              location ^~ /.well-known/acme-challenge/ {
+                  default_type "text/plain";
+              }
+
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+          }
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Validate Nginx configuration
+      ansible.builtin.command: nginx -t
+      register: nginx_test
+      changed_when: false
+      failed_when: nginx_test.rc != 0
+
+    - name: Enable and start Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+      when: nginx_test.rc == 0
+
+  handlers:
+    - name: Reload nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded

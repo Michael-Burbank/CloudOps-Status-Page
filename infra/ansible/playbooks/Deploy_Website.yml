@@ -1,0 +1,27 @@
+# This playbooks deploys the web app to the server w/in inventory.ini
+- name: Deploy Website
+
+  # Host group defined in inventory.ini
+  hosts: web
+  # Sudo privileges
+  become: true
+
+  vars:
+    website_source_path: "/var/www/myapp"
+
+  tasks:
+    - name: Deploy website backend directory
+      ansible.builtin.copy:
+        src: "../../../services/michael-burbank/backend/"
+        dest: "{{ website_source_path }}/"
+
+        owner: nginx
+        group: nginx
+        mode: "0644"
+      notify:
+        - Reload nginx
+  handlers:
+    - name: Reload nginx
+      ansible.builtin.systemd:
+        name: nginx
+        state: reloaded
