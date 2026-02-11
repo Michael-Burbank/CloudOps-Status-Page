@@ -18,8 +18,8 @@
         owner: nginx
         group: nginx
         mode: "0644"
-      notify:
-        - Reload nginx
+      notify: Reload nginx
+
   handlers:
     - name: Reload nginx
       ansible.builtin.systemd:
