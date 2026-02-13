@@ -1,169 +1,165 @@
 # CloudOps Status Page
 
-A professional, cloud-native status page solution for monitoring and displaying the health of multiple endpoints, built with AWS (Python, Terraform, Ansible), and featuring robust CI/CD with GitLab CI. The status page and the backend run on an Amazon Linux 2023 EC2 host behind an ALB, and CloudFront in front for HTTPS, caching, and a clean public edge.
+CloudOps Status Page is a cloud-native status page project that I am using to sharpen my AWS Solutions Architect, Infrastructure as Code, and CloudWatch skills. The initial focus is simple and very practical: **monitor the public Arizona State Parks & Trails website (<https://azstateparks.com>)** from AWS and expose that health on a small status page.
 
-## Table of Contents
-
-- [CloudOps Status Page](#cloudops-status-page)
-  - [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [Features](#features)
-  - [Architecture](#architecture)
-  - [Getting Started](#getting-started)
-  - [Infrastructure as Code](#infrastructure-as-code)
-  - [Configuration Management](#configuration-management)
-  - [CI/CD](#cicd)
-    - [GitLab CI](#gitlab-ci)
-  - [Roadmap](#roadmap)
-  - [Contributing](#contributing)
-  - [License](#license)
+Over time this repository will grow into a reusable, open-source pattern for monitoring multiple endpoints (websites and APIs) using AWS-native services and modern DevOps practices.
 
 ---
 
-## Overview
+## Current Scope (Phase 1)
 
-CloudOps Status Page is a full-stack solution for real-time monitoring of web services and APIs. It provides a public-facing status page, incident tracking, and alerting, all deployed using modern DevOps practices.
+Right now the project is intentionally narrow so I can get the fundamentals right:
 
----
+- **Single endpoint:** `https://azstateparks.com`
+- **Health checks:** periodic HTTP GET, tracking status code and latency
+- **Serverless monitoring pipeline:**
+  - **Amazon EventBridge:** schedule that triggers the health check
+  - **AWS Lambda:** Python function that performs the check and emits metrics/logs
+  - **Amazon CloudWatch Logs:** request + result logging for troubleshooting
+  - **Amazon CloudWatch Metrics & Alarms:** basic availability/latency alarms
+- **Infrastructure as Code:** Terraform manages all AWS resources for the checker
 
-## Features
-
-- Monitor 3–5 endpoints (websites, APIs, public services)
-- Customizable check frequency (e.g., every 5 minutes)
-- Detects downtime (timeouts, non-2xx, latency thresholds)
-- Professional HTML/CSS status page with live updates
-- Responsive design for mobile and desktop
-- S3 static website hosting with CloudFront (HTTPS)
-- CloudFront in front of ALB and S3 for edge HTTPS and caching
-- Custom domain support via Route 53
-- Live status and incident history via JavaScript/API
-- DynamoDB for storing check results and incidents
-- Backend API and monitoring runner on EC2 (Amazon Linux 2023)
-- ALB for routing API traffic to EC2
-- Incident lifecycle management and alerting (SNS/Slack)
-- Automated tests for backend logic and API
-- Infrastructure as Code with Terraform
-- Configuration management with Ansible
-- Source control and mirroring (GitLab => GitHub)
-- CI/CD with GitLab CI
+The public status UI and multi-endpoint support will be layered on top of this solid, observable core.
 
 ---
 
-## Architecture
+## Planned Features
 
-User ──> Route 53 ──> CloudFront ──> S3 (Static Site)
-│
-└──> CloudFront ──> ALB ──> EC2 (API & Monitoring Runner)
-│
-└──> DynamoDB (Status, History, Incidents)
-│
-└──> SNS/Slack (Alerts)
+As the project evolves, the goal is to support:
 
-**CloudFront**: CDN in front of both S3 (static site) and ALB (API)
+- Monitor **multiple endpoints** (websites, APIs, public services)
+- Configurable check frequency (for example every 1, 5, or 15 minutes)
+- Downtime detection based on timeouts, non-2xx responses, or slow latency
+- Simple, professional status page (HTML/CSS/JS) hosted on **S3 + CloudFront**
+- Historical incident view backed by **DynamoDB**
+- Alerting via **SNS** (email, Slack, or similar later)
+- Optional "ops toolbox" EC2 instance managed with **Ansible** for experiments
+- CI/CD using **GitLab CI** (with mirroring to GitHub) for tests and deployments
 
-**S3**: Hosts static HTML/CSS/JS files
-
-**ALB**: Routes `/api/*` traffic to EC2
-
-**EC2**: Runs Python API (FastAPI/Flask) and monitoring runner (systemd timer)
-
-**DynamoDB**: Stores status, check history, and incident records
-
-**SNS**: Sends email alerts (Slack optional)
-
-**Route 53**: Custom domain for status page
-
-**ACM**: TLS certificates for HTTPS
+I am deliberately building this in small, well-defined phases so it mirrors the kind of incremental CloudOps work I will be doing professionally.
 
 ---
 
-## Getting Started
+## Architecture (Phase 1)
+
+Current serverless monitoring flow:
+
+```text
+EventBridge schedule (every N minutes)
+        ↓
+AWS Lambda (Python health check for https://azstateparks.com)
+        ↓
+CloudWatch Logs (raw results + debugging)
+        ↓
+CloudWatch Metrics & Alarms (availability/latency signals)
+```
+
+Key ideas:
+
+- **EventBridge** handles scheduling instead of cron on a VM.
+- **Lambda** keeps the checker lightweight, scalable, and low-cost.
+- **CloudWatch Logs** provide detailed traces for each run.
+- **CloudWatch Metrics & Alarms** turn raw checks into actionable signals.
+
+Future phases will introduce DynamoDB for structured history and S3/CloudFront for the public status page.
+
+---
+
+## Tech Stack
+
+### AWS Services\*\*
+
+- Lambda (Python health-check function)
+- EventBridge (scheduled triggers)
+- CloudWatch Logs, Metrics, Alarms
+- DynamoDB (planned for status history)
+- S3 + CloudFront (planned for frontend hosting)
+- IAM (least-privilege roles for Lambda and related services)
+
+### Infrastructure as Code & Automation\*\*
+
+- Terraform for provisioning AWS resources
+- Ansible (planned) for configuring any EC2-based "ops toolbox" instances
+- GitLab CI (planned) for automated tests, Terraform validation, and deployments
+
+### Languages & Tools\*\*
+
+- Python 3.x
+- HCL (Terraform)
+- Bash / shell scripts where helpful
+
+---
+
+## Getting Started (Work in Progress)
+
+> **Note:** This repository is under active development. The exact file paths and variable names may change as I iterate. The steps below describe the intended workflow.
 
 1. **Clone the repository**
-2. **Configure endpoints and SLOs** in the configuration files
-3. Use Terraform to provision the AWS infrastructure (S3, CloudFront, ALB, EC2, Route 53, DynamoDB, SNS)
-4. **Configure Ansible** for EC2 instance setup and ops toolbox
-5. **Set up CI/CD** for automated testing and deployment
 
----
+   ```bash
+   git clone https://github.com/your-username/cloudops-status-page.git
+   cd cloudops-status-page
+   ```
 
-## Infrastructure as Code
+2. **Configure AWS credentials**
 
-All AWS resources are provisioned using Terraform:
+   Use an IAM user or role with least-privilege permissions suitable for creating the resources managed by Terraform in your chosen AWS account.
 
-- S3 bucket for static site assets
-- CloudFront distribution with two origins (S3 and ALB)
-- ACM certificate and Route 53 records
-- VPC, security groups
-- ALB + target group + listener
-- EC2 instance (Amazon Linux 2023, t2.small, gp3 30GB EBS)
-- IAM instance profile (least privilege for DynamoDB and SNS)
-- DynamoDB tables
-- SNS topic/subscription
-- Optional CloudWatch logs and alarms
+3. **Review Terraform configuration**
+   - Check the Terraform files under `infra/` (or the directory you use for IaC).
+   - Update variables such as region, tags, and any naming conventions.
 
-> **Tip:** Use modules, inputs, and outputs for clean, reusable code.
+4. **Initialize and apply Terraform**
 
----
+   ```bash
+   cd infra
+   terraform init
+   terraform plan
+   terraform apply
+   ```
 
-## Configuration Management
+5. **Verify the health checker**
+   - Open the AWS console and navigate to **CloudWatch Logs** to confirm that the Lambda function is running on schedule.
+   - Check CloudWatch metrics and any defined alarms to see availability and latency for `https://azstateparks.com`.
 
-Ansible is used for:
-
-- Provisioning and configuring the EC2 instance (users, packages, Python environment)
-- Setting up systemd services for API and monitoring runner
-- Nginx config (if used)
-- Basic hardening and logging
-- Standardizing dev environments (tooling, git hooks, commands)
-
-> **Note:** Document what Ansible manages vs. Terraform.
-
----
-
-## CI/CD
-
-### GitLab CI
-
-- Lint, test, and validate on push/PR
-- Deploy infrastructure and backend on merge to main
-- Pipeline step to push changes to GitHub (mirror)
-- Lint + pytest for Python code
-- `terraform fmt` + `terraform validate` for IaC
-- Deploy backend code to EC2 and restart systemd services
-- Frontend deploys to S3 and invalidates CloudFront
-
-> **Security:** Never commit AWS credentials. Use OIDC for GitHub Actions to assume AWS roles.
+As the frontend status page and multi-endpoint configuration are implemented, this section will be updated with additional steps.
 
 ---
 
 ## Roadmap
 
-1. Baseline health checks and UI wiring  
-   Lock endpoint list, timeouts, latency thresholds, and consecutive-check rules. Wire the status page JavaScript to the API (served from EC2) so the UI updates from live data.
+1. **Phase 1. Single-endpoint monitoring (current focus)**
+   - Lambda + EventBridge health checker for `https://azstateparks.com`
+   - CloudWatch Logs, metrics, and basic alarms
 
-2. EC2 host setup with Ansible  
-   Configure the Amazon Linux 2023 EC2 instance with Ansible: users, packages, Nginx (if used), and systemd units for the API and monitoring runner.
+2. **Phase 2. Persistence and history**
+   - Store check results and incidents in DynamoDB
+   - Build simple APIs to query recent and historical status
 
-3. Monitoring runner and DynamoDB persistence  
-   Build the runner as a Python script scheduled with a systemd timer on EC2. Write results to DynamoDB and maintain a clean history view for each service.
+3. **Phase 3. Public status page**
+   - Static frontend on S3 + CloudFront
+   - Live status indicator and recent incident history
 
-4. Incident tracking and notifications  
-   Add incident open/close logic based on consecutive failures/recoveries. Send SNS email alerts (and optionally Slack) when incidents open.
+4. **Phase 4. Multi-endpoint configuration**
+   - Move endpoint definitions into a configuration file or DynamoDB table
+   - Support additional public endpoints via config or pull requests
 
-5. CloudFront, DNS, and production hardening  
-   Place CloudFront in front of both S3 (static site) and ALB (API). Point DNS through Route 53. Harden security: least-privilege IAM, minimal inbound ports, log visibility, and basic alarms.
+5. **Phase 5. Automation and hardening**
+   - CI/CD pipelines with GitLab CI (linting, tests, Terraform validation)
+   - IAM tightening, logging improvements, and helpful CloudWatch dashboards
 
 ---
 
-## Contributing
+## Why this project exists
 
-Contributions are welcome! Please open issues or pull requests. Follow these guidelines:
+CloudOps Status Page is both a useful tool and a learning vehicle. It is designed to:
 
-1. Fork the repo and create a feature branch
-2. Write clear, concise commit messages
-3. Add/Update tests as needed
-4. Ensure all CI checks pass
-5. Submit a pull request for review
+- Practice **AWS Solutions Architect** patterns on a realistic, but manageable, problem.
+- Use **Terraform** and other IaC tools to manage real infrastructure end-to-end.
+- Get hands-on with **CloudWatch** for logs, metrics, alarms, and dashboards.
+- Build something I can talk about concretely when discussing cloud operations and monitoring work.
+
+If you have ideas, suggestions, or want to adapt this pattern for your own endpoints, feel free to open an issue or submit a pull request.
 
 ---
 
