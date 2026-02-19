@@ -1,169 +1,185 @@
 # CloudOps Status Page
 
-CloudOps Status Page is a cloud-native status page project that I am using to sharpen my AWS Solutions Architect, Infrastructure as Code, and CloudWatch skills. The initial focus is simple and very practical: **monitor the public Arizona State Parks & Trails website (<https://azstateparks.com>)** from AWS and expose that health on a small status page.
+I’m building this project to monitor public-facing website/API health from AWS and publish a simple status page.  
+My current focus is operational clarity over complexity: small, observable, and easy to explain.
 
-Over time this repository will grow into a reusable, open-source pattern for monitoring multiple endpoints (websites and APIs) using AWS-native services and modern DevOps practices.
-
----
-
-## Current Scope (Phase 1)
-
-Right now the project is intentionally narrow so I can get the fundamentals right:
-
-- **Single endpoint:** `https://azstateparks.com`
-- **Health checks:** periodic HTTPS GET, tracking status code and latency
-- **EC2-based monitoring pipeline:**
-  - **EC2 instance:** runs a Python monitoring script on a timer (systemd or cron)
-  - **Amazon CloudWatch Logs:** request + result logging for troubleshooting
-  - **Amazon CloudWatch Metrics & Alarms:** custom metrics and basic availability/latency alarms
-- **Infrastructure as Code:** Terraform manages all AWS resources for the checker
-
-The public status UI and multi-endpoint support will be layered on top of this solid, observable core.
+Right now I’m starting with one endpoint and a clean pipeline, then expanding in phases.
 
 ---
 
-## Planned Features
+## What I’m Building (Current Direction)
 
-As the project evolves, the goal is to support:
+I want a lightweight monitoring system that does three things well:
 
-- Monitor **multiple endpoints** (websites, APIs, public services)
-- Configurable check frequency (for example every 1, 5, or 15 minutes)
-- Downtime detection based on timeouts, non-2xx responses, or slow latency
-- Simple, professional status page (HTML/CSS/JS) hosted on **S3 + CloudFront**
-- Historical incident view backed by **DynamoDB**
-- Alerting via **SNS** (email, Slack, or similar later)
-- Optional "ops toolbox" EC2 instance managed with **Ansible** for experiments
-- CI/CD using **GitLab CI** (with mirroring to GitHub) for tests and deployments
-- Small **CloudFormation** example stack managed alongside Terraform
+1. Makes a normal HTTPS request to a public endpoint
+2. Decides if the service is healthy (up/down + latency)
+3. Sends logs, metrics, and alarms to CloudWatch
 
-I am deliberately building this in small, well-defined phases so it mirrors the kind of incremental CloudOps work I will be doing professionally.
+This gives me an external observer view, which is exactly what I need for a practical CloudOps project.
 
 ---
 
-## Architecture (Phase 1)
+## Phase 1 Architecture (Current)
 
-Current EC2 monitoring flow:
+### Backend flow
 
-```text
-systemd or cron (every N minutes)
-   ↓
-EC2 (Python health check for https://azstateparks.com)
-        ↓
-CloudWatch Logs (raw results + debugging)
-        ↓
-CloudWatch Metrics & Alarms (availability/latency signals)
-```
+- An **EC2 instance** in my VPC runs a Python monitoring script on a schedule
+- The script sends HTTPS requests to my target endpoint(s)
+- The script records:
+  - HTTP status code
+  - latency
+  - errors/timeouts
+  - timestamp
+- Results are written to:
+  - **CloudWatch Logs** (detailed run records)
+  - **CloudWatch Metrics** (health + latency time series)
+- **CloudWatch Alarms** trigger on repeated failures or high latency
 
-Key ideas:
+### Frontend (early/placeholder)
 
-- **EC2** provides a host that can also run a backend API and future tools.
-- **systemd/cron** keeps scheduling simple and realistic for legacy or hybrid environments.
-- **CloudWatch Logs** provide detailed traces for each run.
-- **CloudWatch Metrics & Alarms** turn raw checks into actionable signals.
-
-Future phases will introduce DynamoDB for structured history and S3/CloudFront for the public status page.
-
----
-
-## Tech Stack
-
-### AWS Services
-
-- EC2 (Python health-check script)
-- VPC (subnets, routing, and networking)
-- CloudWatch Logs, Metrics, Alarms
-- DynamoDB (planned for status history)
-- S3 + CloudFront (planned for frontend hosting)
-- IAM (instance profile and roles for CloudWatch, later DynamoDB/SNS)
-- SNS (planned for notifications)
-- CloudFormation (small example stack for comparison)
-
-### Infrastructure as Code & Automation
-
-- Terraform for provisioning AWS resources
-- Ansible (planned) for configuring any EC2-based "ops toolbox" instances
-- GitLab CI (planned) for automated tests, Terraform validation, and deployments
-
-### Languages & Tools
-
-- Python 3.x
-- HCL (Terraform)
-- Bash / shell scripts where helpful
+- Static status UI hosted on **S3**
+- Initially can use placeholder/static data
+- Later will consume my REST API output
 
 ---
 
-## Getting Started (Work in Progress)
+## Terraform Scope
 
-> **Note:** This repository is under active development. The exact file paths and variable names may change as I iterate. The steps below describe the intended workflow.
+I’m using Terraform as the source of truth for infrastructure.
 
-1. **Clone the repository**
+### Networking
 
-   ```bash
-   git clone https://github.com/your-username/cloudops-status-page.git
-   cd cloudops-status-page
-   ```
+- VPC
+- Public and/or private subnets
+- Internet Gateway and/or NAT Gateway (depending on final design)
+- Route tables and associations
 
-2. **Configure AWS credentials**
+### Security
 
-   Use an IAM user or role with least-privilege permissions suitable for creating the resources managed by Terraform in your chosen AWS account.
+- Security groups for EC2/API access
+- Network ACLs (if needed)
 
-3. **Review Terraform configuration**
-   - Check the Terraform files under `infra/` (or the directory you use for IaC).
-   - Update variables such as region, tags, and any naming conventions.
+### Compute
 
-4. **Initialize and apply Terraform**
+- EC2 instance configuration
+- IAM instance profile + role for CloudWatch access
+- Role designed to expand later for DynamoDB/SNS writes
 
-   ```bash
-   cd infra
-   terraform init
-   terraform plan
-   terraform apply
-   ```
+### Storage and Frontend
 
-5. **Verify the health checker**
-   - Open the AWS console and navigate to **CloudWatch Logs** to confirm the EC2 script is running on schedule.
-   - Check CloudWatch metrics and any defined alarms to see availability and latency for `https://azstateparks.com`.
+- S3 bucket for static status page
+- Optional S3 website settings and bucket policy
+- Optional CloudFront distribution in later phase
 
-As the frontend status page and multi-endpoint configuration are implemented, this section will be updated with additional steps.
+### Monitoring
 
----
+- CloudWatch metric alarms for health and latency
+- Optional CloudWatch dashboard (later)
 
-## Roadmap
+### CloudFormation Example (Learning/Interview)
 
-1. **Phase 1. Single-endpoint monitoring (current focus)**
-   - EC2-based health checker for `https://azstateparks.com`
-   - systemd/cron scheduling
-   - CloudWatch Logs, metrics, and basic alarms
-
-2. **Phase 2. Persistence and history**
-   - Store check results and incidents in DynamoDB
-   - Build simple APIs to query recent and historical status
-
-3. **Phase 3. Public status page**
-   - Static frontend on S3 + CloudFront
-   - Live status indicator and recent incident history
-
-4. **Phase 4. Multi-endpoint configuration**
-   - Move endpoint definitions into a configuration file or DynamoDB table
-   - Support additional public endpoints via config or pull requests
-
-5. **Phase 5. Automation and hardening**
-   - CI/CD pipelines with GitLab CI (linting, tests, Terraform validation)
-   - IAM tightening, logging improvements, and helpful CloudWatch dashboards
-   - Small CloudFormation stack managed alongside Terraform
+- One small CloudFormation stack managed alongside Terraform  
+  (for a low-risk resource like SNS topic or log group)
 
 ---
 
-## Why this project exists
+## AWS Services in This Project
 
-CloudOps Status Page is both a useful tool and a learning vehicle. It is designed to:
+### In use now
 
-- Practice **AWS Solutions Architect** patterns on a realistic, but manageable, problem.
-- Use **Terraform** and other IaC tools to manage real infrastructure end-to-end.
-- Get hands-on with **CloudWatch** for logs, metrics, alarms, and dashboards.
-- Build something I can talk about concretely when discussing cloud operations and monitoring work.
+- Amazon EC2
+- Amazon VPC
+- AWS IAM
+- Amazon CloudWatch (Logs, Metrics, Alarms)
+- Terraform
 
-If you have ideas, suggestions, or want to adapt this pattern for your own endpoints, feel free to open an issue or submit a pull request.
+### Planned next
+
+- Amazon DynamoDB (history/incidents)
+- Amazon SNS (notifications)
+- Amazon S3 + CloudFront (public status page)
+- AWS CloudFormation (comparison example stack)
+
+---
+
+## Phased Roadmap
+
+### Phase 1 — Single endpoint monitoring (current)
+
+- Build EC2-based monitor script
+- Schedule with systemd or cron
+- Send logs/metrics to CloudWatch
+- Configure baseline alarms
+- Manage resources with Terraform
+
+### Phase 2 — Persistence and history
+
+- Add DynamoDB table
+- Store each check result (endpoint, timestamp, status, latency, error)
+- Update monitor script to write records
+
+### Phase 3 — Public status page
+
+- Build static frontend (HTML/CSS/JS)
+- Host on S3
+- Read current status/history from my API
+- Add CloudFront for HTTPS + edge caching
+
+### Phase 4 — Multi-endpoint support
+
+- Move endpoint definitions to config or DynamoDB
+- Loop through multiple services in one run
+- Update frontend/data model for multi-service UI
+
+### Phase 5 — Automation and hardening
+
+- Add GitLab CI pipeline:
+  - Python linting/tests
+  - `terraform fmt` and `terraform validate`
+  - optional non-destructive `terraform plan`
+- Tighten IAM policies
+- Improve dashboards/logging
+- Keep CloudFormation comparison example in repo
+
+---
+
+## CloudWatch Strategy
+
+I’m using CloudWatch as my central observability layer:
+
+- **Logs:** detailed record of each check
+- **Metrics:** custom time series for health + latency
+- **Alarms:** alert conditions for outages and slowness
+- **Dashboards (later):** one-screen operational view
+
+---
+
+## Why I’m Building It This Way
+
+I chose this design because it matches real Cloud Systems Admin work:
+
+- EC2 host operations
+- IAM role design
+- network/security fundamentals
+- CloudWatch-based observability
+- infrastructure as code with Terraform
+
+It also gives me clear interview talking points with a system I can actually demonstrate end to end.
+
+---
+
+## Local/Deployment Workflow (WIP)
+
+1. Clone repo
+2. Configure AWS credentials for your account
+3. Review Terraform variables
+4. Run:
+   - `terraform init`
+   - `terraform plan`
+   - `terraform apply`
+5. Verify CloudWatch Logs/Metrics/Alarms are receiving monitor data
+
+I’ll keep this section updated as the API and frontend become fully wired.
 
 ---
 
